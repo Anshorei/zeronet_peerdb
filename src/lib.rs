@@ -11,9 +11,10 @@ pub mod sqlite;
 mod tests;
 
 #[cfg(not(feature = "sql"))]
-pub use basic::PeerDB;
+pub use basic::{PeerDB, Error};
 #[cfg(feature = "sql")]
-pub use sqlite::PeerDB;
+pub use sqlite::{PeerDB, Error};
+
 
 pub fn get_peer_db_type() -> &'static str {
   #[cfg(feature = "sql")]

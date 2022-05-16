@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use lazy_static::lazy_static;
-use log::*;
 use rusqlite::{named_params, params, Connection};
 use rusqlite_migration::{Migrations, M};
 use thiserror::Error;
