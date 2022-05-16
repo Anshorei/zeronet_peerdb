@@ -1,0 +1,32 @@
+[package]
+name = "zeronet_peerdb"
+version = "0.1.0"
+authors = [ "Ansho Rei <anshorei@protonmail.com>" ]
+edition = "2021"
+description = "A peer database library for ZeroNet"
+readme = "README.md"
+repository = "http://www.github.com/Anshorei/zeronet_peerdb"
+license = "WTFPL"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+sql = [ "rusqlite", "rusqlite_migration", "lazy_static", "thiserror" ]
+
+[dependencies]
+zeronet_protocol = "0.1"
+log = "0.4"
+
+lazy_static = { version = "1.4", optional = true }
+rusqlite = { version = "0.27", optional = true }
+rusqlite_migration = { version = "1.0", optional = true }
+thiserror = { version = "1.0", optional = true }
+
+[dev-dependencies]
+rand = "0.8"
+criterion = "0.3.5"
+
+[[bench]]
+name = "peer_db"
+harness = false
+html_reports = true
