@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use std::time::{SystemTime, Duration};
 
 use zeronet_protocol::PeerAddr;
 
@@ -16,6 +16,31 @@ fn get_peerdb() -> PeerDB {
 #[cfg(feature = "sql")]
 fn get_peerdb() -> PeerDB {
   return PeerDB::new(None).unwrap();
+}
+
+fn generate_hash() -> Hash {
+  let hash = (0..8).map(|_| rand::random()).collect();
+  return Hash(hash);
+}
+
+fn generate_peer_address() -> PeerAddr {
+  return PeerAddr::IPV4(
+    [
+      rand::random(),
+      rand::random(),
+      rand::random(),
+      rand::random(),
+    ],
+    rand::random(),
+  );
+}
+
+fn generate_peer() -> Peer {
+  return Peer {
+    address:    generate_peer_address(),
+    last_seen:  SystemTime::now(),
+    date_added: SystemTime::now(),
+  };
 }
 
 #[test]
@@ -59,6 +84,7 @@ fn test_remove_peer() {
   peer_db
     .update_peer(&peer, &hashes)
     .expect("Could not update peer");
+
   assert!(peer_db.remove_peer(&peer.address).is_ok());
   assert_eq!(peer_db.get_peer_count().unwrap(), 0);
 }
@@ -170,38 +196,31 @@ fn test_get_hashes() {
 #[test]
 fn test_cleanup_peers() {
   let mut peer_db = get_peerdb();
+  let mut peer = generate_peer();
+  peer.last_seen = peer.last_seen.checked_sub(Duration::from_secs(10)).unwrap();
+  peer_db.update_peer(&peer, &vec![]).unwrap();
+
+  assert_eq!(peer_db.get_peer_count().unwrap(), 1);
+
   let result = peer_db.cleanup_peers(SystemTime::now());
-  assert!(result.is_ok());
+
+  assert_eq!(result.unwrap(), 1);
+  assert_eq!(peer_db.get_peer_count().unwrap(), 0);
 }
 
 #[test]
 fn test_cleanup_hashes() {
   let mut peer_db = get_peerdb();
+  let peer = generate_peer();
+  let hash = generate_hash();
+  peer_db.update_peer(&peer, &vec![hash]).unwrap();
+  peer_db.remove_peer(&peer.address).unwrap();
+
+  assert_eq!(peer_db.get_hash_count().unwrap(), 1);
+  assert_eq!(peer_db.get_peer_count().unwrap(), 0);
+
   let result = peer_db.cleanup_hashes();
-  assert!(result.is_ok());
+
+  assert_eq!(result.unwrap(), 1);
+  assert_eq!(peer_db.get_hash_count().unwrap(), 0);
 }
-
-// extern crate test;
-
-// #[bench]
-// fn bench_get_peers_for_1000_hashes(b: &mut test::Bencher) {
-//     let mut peer_db = get_peerdb();
-//     let hash = generate_hash();
-
-//     for _ in 0..1000 {
-//         let peer = Peer {
-//             address: generate_peer_address(),
-//             last_seen: SystemTime::now(),
-//             date_added: SystemTime::now(),
-//         };
-//         let mut unique_hash = generate_hash();
-//         unique_hash.0.push(0u8); // Make sure hash does not collide
-//         peer_db
-//             .update_peer(peer, vec![hash.clone(), unique_hash])
-//             .unwrap();
-//     }
-
-//     b.iter(|| {
-//         peer_db.get_peers_for_hash(&hash).unwrap();
-//     })
-// }

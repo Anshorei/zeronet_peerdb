@@ -343,11 +343,18 @@ impl PeerDatabase for PeerDB {
   }
 
   fn cleanup_peers(&mut self, timestamp: SystemTime) -> Result<usize, Self::Error> {
-    let count: usize = self.conn.execute(
+    self.conn.execute(
       "
-      DELETE FROM peer_hashes WHERE peer_pk IN (SELECT pk FROM peers WHERE last_seen < :timestamp);
-      DELETE FROM peers WHERE last_seen < :timestamp;",
-      named_params![":timestamp": timestamp_to_unix(timestamp),],
+      DELETE FROM peer_hashes
+      WHERE peer_pk IN (
+        SELECT pk FROM peers WHERE last_seen < :timestamp
+      );
+      ",
+      named_params![":timestamp": timestamp_to_unix(timestamp)],
+    )?;
+    let count: usize = self.conn.execute(
+      "DELETE FROM peers WHERE last_seen < :timestamp;",
+      named_params![":timestamp": timestamp_to_unix(timestamp)],
     )?;
 
     Ok(count)
@@ -359,7 +366,10 @@ impl PeerDatabase for PeerDB {
       DELETE FROM hashes
       WHERE pk IN (
         SELECT pk FROM (
-          SELECT hash_pk pk, COUNT(peer_pk) count FROM peer_hashes
+          SELECT pk, COUNT(peer_pk) count
+          FROM hashes
+            LEFT JOIN peer_hashes ON (hashes.pk = peer_hashes.hash_pk)
+          GROUP BY pk
         )
         WHERE count = 0
       );",
