@@ -2,6 +2,7 @@ use std::time::SystemTime;
 
 use zeronet_protocol::PeerAddr as Address;
 
+pub mod error;
 #[cfg(not(feature = "sql"))]
 pub mod basic;
 #[cfg(feature = "sql")]
@@ -10,10 +11,11 @@ pub mod sqlite;
 #[cfg(test)]
 mod tests;
 
+pub use error::Error;
 #[cfg(not(feature = "sql"))]
-pub use basic::{PeerDB, Error};
+pub use basic::PeerDB;
 #[cfg(feature = "sql")]
-pub use sqlite::{PeerDB, Error};
+pub use sqlite::PeerDB;
 
 
 pub fn get_peer_db_type() -> &'static str {

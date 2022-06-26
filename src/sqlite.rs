@@ -53,7 +53,7 @@ pub enum Error {
   #[error("error with rusqlite")]
   SQLite(#[from] rusqlite::Error),
   #[error("error with rusqlite_migrations")]
-  SQLiteMigrations(#[from] rusqlite_migration::Error),
+  SQLiteMigration(#[from] rusqlite_migration::Error),
 }
 
 pub struct PeerDB {
@@ -81,7 +81,7 @@ impl PeerDB {
           (:address, :date_added, :last_seen)
         ON CONFLICT (address) DO UPDATE SET
           last_seen = :last_seen
-        RETURNING last_seen;",
+        RETURNING date_added;",
       named_params! {
         ":address": peer.address.to_string(),
         ":date_added": timestamp_to_unix(peer.date_added),

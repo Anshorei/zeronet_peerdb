@@ -3,9 +3,7 @@ use std::time::SystemTime;
 
 use zeronet_protocol::PeerAddr as Address;
 
-use super::{Hash, Peer, PeerDatabase};
-
-pub type Error = ();
+use super::{Error, Hash, Peer, PeerDatabase};
 
 #[derive(Clone)]
 pub struct StoredHash {
@@ -51,7 +49,7 @@ impl PeerDB {
 }
 
 impl PeerDatabase for PeerDB {
-  type Error = ();
+  type Error = Error;
 
   fn update_peer(&mut self, peer: &Peer, hashes: &Vec<Hash>) -> Result<bool, Self::Error> {
     if !self.peer_to_hash.contains_key(&&peer.address) {
@@ -83,7 +81,7 @@ impl PeerDatabase for PeerDB {
       self
         .hash_to_peer
         .get_mut(hash)
-        .unwrap()
+        .ok_or(Error::HashNotFound)?
         .remove(peer_address);
     }
 
@@ -99,19 +97,17 @@ impl PeerDatabase for PeerDB {
   }
 
   fn get_peers_for_hash(&self, hash: &Hash) -> Result<Vec<Peer>, Self::Error> {
-    let peers = self.hash_to_peer.get(hash);
-    let peers = match peers {
-      Some(peers) => peers.iter().collect(),
-      None => vec![],
-    };
+    let peer_addresses = self.hash_to_peer
+      .get(hash)
+      .ok_or(Error::HashNotFound)?;
 
-    let peers = peers
-      .iter()
-      .map(|peer_id| {
-        let peer = self.peers.get(*peer_id).unwrap();
-        peer.clone()
-      })
-      .collect();
+    let mut peers = vec![];
+    for peer_address in peer_addresses {
+      let peer = self.peers
+        .get(peer_address)
+        .ok_or(Error::PeerNotFound)?;
+      peers.push(peer.clone());
+    }
 
     Ok(peers)
   }
